@@ -26,7 +26,7 @@ namespace kcp2k
         protected readonly KcpConfig config;
 
         // state
-        protected Socket socket;
+        public Socket socket;
         EndPoint newClientEP;
 
         // raw receive buffer always needs to be of 'MTU' size, even if
