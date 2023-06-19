@@ -26,7 +26,7 @@ namespace kcp2k
         protected readonly KcpConfig config;
 
         // state
-        public Socket socket;
+        protected Socket socket;
         EndPoint newClientEP;
 
         // raw receive buffer always needs to be of 'MTU' size, even if
@@ -111,15 +111,19 @@ namespace kcp2k
             socket.Blocking = false;
 
             // configure buffer sizes
-            Common.ConfigureSocketBuffers(socket, config.RecvBufferSize, config.SendBufferSize);
+            Common.ConfigureSocketBuffers(socket);
         }
 
-        public void Send(int connectionId, ArraySegment<byte> segment, KcpChannel channel)
+        public bool Send(int connectionId, ArraySegment<byte> segment, KcpChannel channel)
         {
             if (connections.TryGetValue(connectionId, out KcpServerConnection connection))
             {
                 connection.peer.SendData(segment, channel);
+
+                return true;
             }
+
+            return false;
         }
 
         public void Disconnect(int connectionId)

@@ -13,16 +13,6 @@ namespace kcp2k
         // (Nintendo Switch, etc.)
         public bool DualMode;
 
-        // UDP servers use only one socket.
-        // maximize buffer to handle as many connections as possible.
-        //
-        //   M1 mac pro:
-        //     recv buffer default: 786896 (771 KB)
-        //     send buffer default:  9216 (9 KB)
-        //     max configurable: ~7 MB
-        public int RecvBufferSize;
-        public int SendBufferSize;
-
         // kcp configuration ///////////////////////////////////////////////////
         // configurable MTU in case kcp sits on top of other abstractions like
         // encrypted transports, relays, etc.
@@ -67,22 +57,20 @@ namespace kcp2k
         // constructor with defaults for convenience.
         // makes it easy to define "new KcpConfig(DualMode=false)" etc.
         public KcpConfig(
-            bool DualMode          = true,
-            int RecvBufferSize     = 1024 * 1024 * 7,
-            int SendBufferSize     = 1024 * 1024 * 7,
+            bool DualMode          = KcpSettings.DualMode,
             int Mtu                = Kcp.MTU_DEF,
-            bool NoDelay           = true,
-            uint Interval          = 10,
-            int FastResend         = 0,
-            bool CongestionWindow  = false,
-            uint SendWindowSize    = Kcp.WND_SND,
-            uint ReceiveWindowSize = Kcp.WND_RCV,
-            int Timeout            = KcpPeer.DEFAULT_TIMEOUT,
-            uint MaxRetransmits    = Kcp.DEADLINK)
+            bool NoDelay           = KcpSettings.NoDelay,
+            uint Interval          = KcpSettings.Interval,
+            int FastResend         = KcpSettings.FastResend,
+            bool CongestionWindow  = KcpSettings.CongestionWindow,
+            uint SendWindowSize    = KcpSettings.SendWindowSize,
+            uint ReceiveWindowSize = KcpSettings.ReceiveWindowSize,
+            int Timeout            = KcpSettings.Timeout,
+            uint MaxRetransmits    = KcpSettings.MaxRetransmits)
         {
             this.DualMode = DualMode;
-            this.RecvBufferSize = RecvBufferSize;
-            this.SendBufferSize = SendBufferSize;
+            //this.RecvBufferSize = RecvBufferSize;
+            //this.SendBufferSize = SendBufferSize;
             this.Mtu = Mtu;
             this.NoDelay = NoDelay;
             this.Interval = Interval;
