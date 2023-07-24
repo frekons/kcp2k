@@ -163,7 +163,7 @@ namespace kcp2k
             }
         }
 
-                // 100k attempts of 1 KB increases = default + 100 MB max
+        // 100k attempts of 1 KB increases = default + 100 MB max
         public static void SetReceiveBufferToOSLimit(this Socket socket, int stepSize = 1024, int attempts = 100_000)
         {
             // setting a too large size throws a socket exception.
