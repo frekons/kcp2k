@@ -86,7 +86,7 @@ namespace kcp2k
 
         // segment pool to avoid allocations in C#.
         // this is not part of the original C code.
-        readonly Pool<Segment> SegmentPool = new Pool<Segment>(
+        internal static readonly Pool<Segment> SegmentPool = new Pool<Segment>(
             // create new segment
             () => new Segment(),
             // reset segment before reuse
@@ -114,7 +114,8 @@ namespace kcp2k
             ssthresh  = THRESH_INIT;
             fastlimit = FASTACK_LIMIT;
             dead_link = DEADLINK;
-            buffer = new byte[(mtu + OVERHEAD) * 3];
+            // buffer = new byte[(mtu + OVERHEAD) * 3];
+            RentBufferFromPool((int)((mtu + OVERHEAD) * 3));
         }
 
         // ikcp_segment_new
@@ -1043,6 +1044,22 @@ namespace kcp2k
             return current_ + minimal;
         }
 
+        public void ReturnBufferToPool()
+        {
+            if (buffer != null)
+            {
+                KcpSettings.KcpBufferPool.Return(buffer, clearArray: true);
+                buffer = null;
+            }
+        }
+
+        public void RentBufferFromPool(int size)
+        {
+            ReturnBufferToPool();
+
+            buffer = KcpSettings.KcpBufferPool.Rent(size);
+        }
+
         // ikcp_setmtu
         // Change MTU (Maximum Transmission Unit) size.
         public void SetMtu(uint mtu)
@@ -1050,7 +1067,8 @@ namespace kcp2k
             if (mtu < 50 || mtu < OVERHEAD)
                 throw new ArgumentException("MTU must be higher than 50 and higher than OVERHEAD");
 
-            buffer = new byte[(mtu + OVERHEAD) * 3];
+            // buffer = new byte[(mtu + OVERHEAD) * 3];
+            RentBufferFromPool((int)((mtu + OVERHEAD) * 3));
             this.mtu = mtu;
             mss = mtu - OVERHEAD;
         }

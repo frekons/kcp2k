@@ -160,6 +160,8 @@ namespace kcp2k
         public readonly int unreliableMax;
         public readonly int reliableMax;
 
+        public int kcpSendBufferSize, kcpMessageBufferSize;
+
         // SetupKcp creates and configures a new KCP instance.
         // => useful to start from a fresh state every time the client connects
         // => NoDelay, interval, wnd size are the most important configurations.
@@ -198,7 +200,8 @@ namespace kcp2k
             kcp.SetMtu((uint)config.Mtu - METADATA_SIZE);
 
             // create mtu sized send buffer
-            rawSendBuffer = new byte[config.Mtu];
+            // rawSendBuffer = new byte[config.Mtu];
+            RentRawSendBufferFromPool(config.Mtu);
 
             // calculate max message sizes once
             unreliableMax = UnreliableMaxMessageSize(config.Mtu);
@@ -209,12 +212,64 @@ namespace kcp2k
 
             // create message buffers AFTER window size is set
             // see comments on buffer definition for the "+1" part
-            kcpMessageBuffer = new byte[1 + reliableMax];
-            kcpSendBuffer = new byte[1 + reliableMax];
+            // kcpMessageBuffer = new byte[1 + reliableMax];
+            // kcpSendBuffer = new byte[1 + reliableMax];
+            RentBufferFromPool(1 + reliableMax);
 
             timeout = config.Timeout;
 
             watch.Start();
+        }
+
+        public void RentBufferFromPool(int size)
+        {
+            kcpMessageBuffer = KcpSettings.KcpBufferPool.Rent(size);
+            kcpSendBuffer = KcpSettings.KcpBufferPool.Rent(size);
+            kcpSendBufferSize = size;
+            kcpMessageBufferSize = size;
+        }
+
+        public void ReturnBufferToPool()
+        {
+            if (kcpMessageBuffer != null)
+            {
+                KcpSettings.KcpBufferPool.Return(kcpMessageBuffer, clearArray: true);
+                kcpMessageBuffer = null;
+            }
+
+            if (kcpSendBuffer != null)
+            {
+                KcpSettings.KcpBufferPool.Return(kcpSendBuffer, clearArray: true);
+                kcpSendBuffer = null;
+            }
+        }
+
+        public void RentRawSendBufferFromPool(int size)
+        {
+            rawSendBuffer = KcpSettings.KcpBufferPool.Rent(size);
+        }
+
+        public void ReturnRawSendBufferToPool()
+        {
+            if (rawSendBuffer != null)
+            {
+                KcpSettings.KcpBufferPool.Return(rawSendBuffer, clearArray: true);
+                rawSendBuffer = null;
+            }
+        }
+
+        public void ReturnAllBuffersToPool()
+        {
+            if (kcp != null)
+            {
+                kcp.ReturnBufferToPool();
+
+                kcp = null;
+            }
+
+            ReturnBufferToPool();
+
+            ReturnRawSendBufferToPool();
         }
 
         public void SetTimeoutTime(int newTimeout)
@@ -304,12 +359,12 @@ namespace kcp2k
 
             // only allow receiving up to buffer sized messages.
             // otherwise we would get BlockCopy ArgumentException anyway.
-            if (msgSize > kcpMessageBuffer.Length)
+            if (msgSize > kcpMessageBufferSize)
             {
                 // we don't allow sending messages > Max, so this must be an
                 // attacker. let's disconnect to avoid allocation attacks etc.
                 // pass error to user callback. no need to log it manually.
-                OnError(ErrorCode.InvalidReceive, $"KcpPeer: possible allocation attack for msgSize {msgSize} > buffer {kcpMessageBuffer.Length}. Disconnecting the connection.");
+                OnError(ErrorCode.InvalidReceive, $"KcpPeer: possible allocation attack for msgSize {msgSize} > buffer {kcpMessageBufferSize}, ({kcpMessageBuffer.Length}). Disconnecting the connection.");
                 Disconnect();
                 return false;
             }
@@ -677,7 +732,7 @@ namespace kcp2k
         void SendReliable(KcpHeader header, ArraySegment<byte> content)
         {
             // 1 byte header + content needs to fit into send buffer
-            if (1 + content.Count > kcpSendBuffer.Length) // TODO
+            if (1 + content.Count > kcpSendBufferSize) // TODO
             {
                 // otherwise content is larger than MaxMessageSize. let user know!
                 // GetType() shows Server/ClientConn instead of just Connection.

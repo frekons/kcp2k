@@ -58,7 +58,7 @@ namespace kcp2k
             // create newClientEP either IPv4 or IPv6
             newClientEP = config.DualMode
                           ? new IPEndPoint(IPAddress.IPv6Any, 0)
-                          : new IPEndPoint(IPAddress.Any,     0);
+                          : new IPEndPoint(IPAddress.Any, 0);
         }
 
         public virtual bool IsActive() => socket != null;
@@ -344,7 +344,22 @@ namespace kcp2k
             //  while iterating connections)
             foreach (int connectionId in connectionsToRemove)
             {
-                connections.Remove(connectionId);
+                if (connections.TryGetValue(connectionId, out var connection))
+                {
+                    connections.Remove(connectionId);
+
+                    if (connection != null)
+                    {
+                        if (connection.peer != null)
+                        {
+                            connection.peer.ReturnAllBuffersToPool();
+
+                            connection.peer = null;
+                        }
+
+                        connection = null;
+                    }
+                }
             }
             connectionsToRemove.Clear();
         }
