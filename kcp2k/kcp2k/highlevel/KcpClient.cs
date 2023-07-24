@@ -13,7 +13,7 @@ namespace kcp2k
         public KcpPeer peer;
 
         // IO
-        protected Socket socket;
+        public Socket socket;
         public EndPoint remoteEndPoint;
 
         // config

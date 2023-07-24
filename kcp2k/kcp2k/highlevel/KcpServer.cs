@@ -348,17 +348,14 @@ namespace kcp2k
                 {
                     connections.Remove(connectionId);
 
-                    if (connection != null)
+                    if (connection.peer != null)
                     {
-                        if (connection.peer != null)
-                        {
-                            connection.peer.ReturnAllBuffersToPool();
+                        connection.peer.ReturnAllBuffersToPool();
 
-                            connection.peer = null;
-                        }
-
-                        connection = null;
+                        connection.peer = null;
                     }
+
+                    connection = null;
                 }
             }
             connectionsToRemove.Clear();

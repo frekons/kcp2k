@@ -99,6 +99,9 @@ namespace kcp2k
         public static int ReliableMaxMessageSize(int mtu, uint rcv_wnd) =>
             ReliableMaxMessageSize_Unconstrained(mtu, Math.Min(rcv_wnd, Kcp.FRG_MAX));
 
+        public static int ReliableMaxMessageSize(int mtu) =>
+            ReliableMaxMessageSize_Unconstrained(mtu, Kcp.FRG_MAX);
+
         // unreliable max message size is simply MTU - channel header size
         public static int UnreliableMaxMessageSize(int mtu) =>
             mtu - METADATA_SIZE;
@@ -106,16 +109,16 @@ namespace kcp2k
         // buffer to receive kcp's processed messages (avoids allocations).
         // IMPORTANT: this is for KCP messages. so it needs to be of size:
         //            1 byte header + MaxMessageSize content
-        readonly byte[] kcpMessageBuffer;// = new byte[1 + ReliableMaxMessageSize];
+        byte[] kcpMessageBuffer;// = new byte[1 + ReliableMaxMessageSize];
 
         // send buffer for handing user messages to kcp for processing.
         // (avoids allocations).
         // IMPORTANT: needs to be of size:
         //            1 byte header + MaxMessageSize content
-        readonly byte[] kcpSendBuffer;// = new byte[1 + ReliableMaxMessageSize];
+        byte[] kcpSendBuffer;// = new byte[1 + ReliableMaxMessageSize];
 
         // raw send buffer is exactly MTU.
-        readonly byte[] rawSendBuffer;
+        byte[] rawSendBuffer;
 
         // send a ping occasionally so we don't time out on the other end.
         // for example, creating a character in an MMO could easily take a
