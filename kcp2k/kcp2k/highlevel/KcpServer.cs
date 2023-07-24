@@ -354,8 +354,6 @@ namespace kcp2k
 
                         connection.peer = null;
                     }
-
-                    connection = null;
                 }
             }
             connectionsToRemove.Clear();
